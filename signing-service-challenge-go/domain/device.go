@@ -1,6 +1,9 @@
 package domain
 
-import "sync"
+import (
+	"go.uber.org/zap"
+	"sync"
+)
 
 // Algorithm represents the supported algorithms.
 type Algorithm int
@@ -37,6 +40,7 @@ type SignatureDevice struct {
 	Algorithm        Algorithm `json:"algorithm"`
 	Label            *string   `json:"label"`
 	SignatureCounter *int      `json:"signatureCounter"`
+	Logger           *zap.SugaredLogger
 }
 
 type CreateSignatureDeviceResponse struct {
@@ -51,6 +55,13 @@ type SignatureService struct {
 func NewSignatureService() *SignatureService {
 	return &SignatureService{
 		Devices: make(map[string]*SignatureDevice),
+	}
+}
+
+func NewDeviceInstance(logger *zap.SugaredLogger) *SignatureDevice {
+
+	return &SignatureDevice{
+		Logger: logger,
 	}
 }
 
