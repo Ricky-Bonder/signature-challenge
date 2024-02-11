@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/api"
+	"github.com/fiskaly/coding-challenges/signing-service-challenge/domain"
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/persistence"
 	"go.uber.org/zap"
 	"log"
@@ -27,6 +28,7 @@ func main() {
 	logger.Info("Starting server on " + ListenAddress)
 	storage := persistence.NewMemoryStorage() // For further implementation change this to DB storage
 	server := api.NewServer(ServerURL, ListenAddress, storage)
+	domain.NewSignatureService()
 
 	// Run the server
 	if err := server.Run(); err != nil {

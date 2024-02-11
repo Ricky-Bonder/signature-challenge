@@ -2,9 +2,7 @@ package domain
 
 import (
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/crypto"
-	"go.uber.org/zap"
 	"sync"
-	"sync/atomic"
 )
 
 // Algorithm represents the supported algorithms.
@@ -14,6 +12,11 @@ type Algorithm int
 const (
 	ECC Algorithm = iota + 1
 	RSA
+)
+
+var (
+	onceSignatureService      sync.Once
+	singletonSignatureService *SignatureService
 )
 
 // AlgorithmNames maps algorithm strings to their corresponding Algorithm constants.
@@ -52,23 +55,14 @@ func NewSignatureService() *SignatureService {
 	}
 }
 
-func NewDeviceInstance(logger *zap.SugaredLogger) *InternalSignatureDevice {
-
-	return &InternalSignatureDevice{}
+func GetSignatureService() *SignatureService {
+	onceSignatureService.Do(func() {
+		singletonSignatureService = NewSignatureService()
+	})
+	return singletonSignatureService
 }
 
-// SignatureResponse represents the response body for signing a transaction.
 type SignatureResponse struct {
 	Signature  string `json:"signature"`
 	SignedData string `json:"signed_data"`
-}
-
-type SignatureCounter int32
-
-func (c *SignatureCounter) Increment() int32 {
-	return atomic.AddInt32((*int32)(c), 1)
-}
-
-func (c *SignatureCounter) Get() int32 {
-	return atomic.LoadInt32((*int32)(c))
 }

@@ -11,7 +11,7 @@ import (
 )
 
 func (s *Server) Signature(response http.ResponseWriter, request *http.Request) {
-	signatureService := domain.NewSignatureService()
+	signatureService := domain.GetSignatureService()
 	signatureService.Mutex.Lock()
 	defer signatureService.Mutex.Unlock()
 	if request.Method != http.MethodPost {
@@ -52,13 +52,14 @@ func (s *Server) Signature(response http.ResponseWriter, request *http.Request) 
 		return
 	}
 
-	signatureCounter := new(domain.SignatureCounter)
+	counter := domain.Increment().Get()
+	fmt.Println("signature counter:", counter)
 
 	signatureDevice := &domain.InternalSignatureDevice{
 		ID:               uuid.New().String(),
 		Algorithm:        generator,
 		Label:            data.Label,
-		SignatureCounter: signatureCounter.Increment(),
+		SignatureCounter: counter,
 	}
 
 	generatedKeyPair, err := signatureDevice.Algorithm.Generate()
