@@ -38,7 +38,8 @@ func (s *Server) Run() error {
 	mux := http.NewServeMux()
 
 	mux.Handle("/api/v0/health", http.HandlerFunc(s.Health))
-	mux.HandleFunc("/api/v0/create-signature-device", s.CreateSignatureDeviceHandler)
+	mux.HandleFunc("/api/v0/create-signature-device", s.Signature)
+	//mux.HandleFunc("/api/v0/create-signature-device", s.CreateSignatureDeviceHandler)
 	// TODO: register further HandlerFuncs here ...
 
 	return http.ListenAndServe(s.listenAddress, mux)
@@ -51,34 +52,6 @@ func WriteInternalError(w http.ResponseWriter) {
 	if err != nil {
 		return
 	}
-}
-
-func (s *Server) CreateSignatureDeviceHandler(response http.ResponseWriter, r *http.Request) {
-
-	if r.Method != http.MethodPost {
-		WriteErrorResponse(response, http.StatusMethodNotAllowed, []string{http.StatusText(http.StatusMethodNotAllowed)})
-		return
-	}
-
-	WriteAPIResponse(response, http.StatusOK, "success")
-
-	// Parse request parameters
-	//id := uuid.New().String() // Generate a unique UUID for the id
-	//algorithm := r.FormValue("algorithm")
-	//label := r.FormValue("label")
-	//
-	//// Process the request and create the signature device
-	//
-	//// Return the response with the generated id and any other relevant information
-	//response := domain.SignatureDevice{
-	//		ID               string `json:"id"`,
-	//	Algorithm        Algorithm `json:"algorithm"`
-	//	Label            *string   `json:"label"`
-	//	SignatureCounter *int      `json:"signatureCounter"`
-	//
-	//}
-	// Return the response to the client
-	// ...
 }
 
 // WriteErrorResponse takes an HTTP status code and a slice of errors
