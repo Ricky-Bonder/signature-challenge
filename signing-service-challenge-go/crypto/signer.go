@@ -24,11 +24,17 @@ func NewRSASigner(keyPair RSAKeyPair) *RSASigner {
 }
 
 // Sign signs the data using RSA.
-func Sign(privateKey *rsa.PrivateKey, dataToBeSigned []byte) ([]byte, error) {
+func SignRSA(keypair *RSAKeyPair, dataToBeSigned []byte) ([]byte, error) {
 	hashed := crypto.SHA256.New()
-	hashed.Write(dataToBeSigned)
+	_, err := hashed.Write(dataToBeSigned)
+	if err != nil {
+		return nil, err
+	}
 	hashedData := hashed.Sum(nil)
-	signature, err := rsa.SignPKCS1v15(rand.Reader, s.Private, crypto.SHA256, hashedData)
+	if err != nil {
+		panic(err)
+	}
+	signature, err := rsa.SignPKCS1v15(rand.Reader, keypair.Private, crypto.SHA256, hashedData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign data: %w", err)
 	}
@@ -46,12 +52,12 @@ func NewECDSASigner(keyPair ECCKeyPair) *ECDSASigner {
 }
 
 // Sign signs the data using ECDSA.
-func (s *ECDSASigner) Sign(dataToBeSigned []byte) ([]byte, error) {
+func SignECC(keypair *ECCKeyPair, dataToBeSigned []byte) ([]byte, error) {
 	hashed := crypto.SHA256.New()
 	hashed.Write(dataToBeSigned)
 	hashedData := hashed.Sum(nil)
 
-	signature, err := ecdsa.SignASN1(rand.Reader, s.keyPair.Private, hashedData)
+	signature, err := ecdsa.SignASN1(rand.Reader, keypair.Private, hashedData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign data: %w", err)
 	}
