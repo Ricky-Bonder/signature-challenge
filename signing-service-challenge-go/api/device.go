@@ -114,10 +114,17 @@ func (s *Server) SignTransaction(response http.ResponseWriter, request *http.Req
 
 	var dataToSign string
 	if device.SignatureCounter == 0 {
-		dataToSign = data.Data + "" + strconv.Itoa(int(device.SignatureCounter)) + "" + base64.StdEncoding.EncodeToString([]byte(device.ID))
+		dataToSign = "" + data.Data +
+			strconv.Itoa(int(device.SignatureCounter)) +
+			base64.StdEncoding.EncodeToString([]byte(device.ID))
 	} else {
-		//TODO get last signature
-		//dataToSign = data.Data + "" + strconv.Itoa(int(device.SignatureCounter)) + "" + base64.StdEncoding.EncodeToString([]byte(LAST_SIGNATURE))
+		lastSignature, err := s.signatureStorage.GetLastSignature()
+		if err != nil {
+			return
+		}
+		dataToSign = "" + data.Data +
+			strconv.Itoa(int(device.SignatureCounter)) +
+			base64.StdEncoding.EncodeToString([]byte(lastSignature))
 	}
 
 	keypair, err := device.Algorithm.Generate()
@@ -150,8 +157,12 @@ func (s *Server) SignTransaction(response http.ResponseWriter, request *http.Req
 		}
 	}
 
-	WriteAPIResponse(response, http.StatusCreated, signatureResponse)
-
+	if signatureResponse != nil {
+		s.signatureStorage.InsertSignature(signatureResponse)
+		WriteAPIResponse(response, http.StatusCreated, signatureResponse)
+	} else {
+		WriteInternalError(response)
+	}
 }
 
 func (s *Server) GetSignatureDevice(response http.ResponseWriter, request *http.Request) {
@@ -170,7 +181,7 @@ func (s *Server) GetSignatureDevice(response http.ResponseWriter, request *http.
 	// Get the value of a specific query parameter (e.g., "id")
 	id := queryParams.Get("id")
 
-	signatureDevice, err := persistence.GetMemoryStorage().GetSignatureDevice(id)
+	signatureDevice, err := persistence.GetSignatureDeviceStorage().GetSignatureDevice(id)
 	if err != nil {
 		return
 	}
@@ -199,7 +210,7 @@ func (s *Server) GetAllSignatureDevices(response http.ResponseWriter, request *h
 		return
 	}
 
-	signatureDevices, err := persistence.GetMemoryStorage().GetAllSignatureDevices()
+	signatureDevices, err := persistence.GetSignatureDeviceStorage().GetAllSignatureDevices()
 	if err != nil {
 		return
 	}

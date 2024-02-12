@@ -6,39 +6,86 @@ import (
 	"sync"
 )
 
-// Storage Implement this interface in any persistence layer, such as a DB
-type Storage interface {
+// DevicesStorage Implement this interface in any persistence layer, such as a DB
+type DevicesStorage interface {
 	GetSignatureDevice(id string) (*domain.InternalSignatureDevice, error)
 	CreateSignatureDevice(device *domain.InternalSignatureDevice) error
 	GetAllSignatureDevices() ([]*domain.InternalSignatureDevice, error)
 }
 
+type SignaturesStorage interface {
+	GetLastSignature() (string, error)
+	InsertSignature(signature *domain.SignatureResponse)
+}
+
 var (
-	once                   sync.Once
-	singletonMemoryStorage *MemoryStorage
+	once                      sync.Once
+	singletonMemoryStorage    *DeviceStorage
+	singletonSignatureStorage *SignatureStorage
 )
 
-type MemoryStorage struct {
+type DeviceStorage struct {
 	devices map[string]*domain.InternalSignatureDevice
 	mutex   sync.RWMutex
 }
 
-// NewMemoryStorage creates a new instance of MemoryStorage.
-func NewMemoryStorage() *MemoryStorage {
-	return &MemoryStorage{
+type SignatureStorage struct {
+	signatures     []*domain.SignatureResponse
+	lastInserted   string
+	signatureMutex sync.RWMutex
+}
+
+// NewSignatureDeviceStorage creates a new instance of DeviceStorage.
+func NewSignatureDeviceStorage() *DeviceStorage {
+	return &DeviceStorage{
 		devices: make(map[string]*domain.InternalSignatureDevice),
 	}
 }
 
-func GetMemoryStorage() *MemoryStorage {
+func NewSignatureStorage() *SignatureStorage {
+	return &SignatureStorage{
+		signatures: make([]*domain.SignatureResponse, 0),
+	}
+}
+
+func GetSignatureDeviceStorage() *DeviceStorage {
 	once.Do(func() {
-		singletonMemoryStorage = NewMemoryStorage()
+		singletonMemoryStorage = NewSignatureDeviceStorage()
 	})
 	return singletonMemoryStorage
 }
 
+func GetSignatureStorage() *SignatureStorage {
+	once.Do(func() {
+		singletonSignatureStorage = NewSignatureStorage()
+	})
+	return singletonSignatureStorage
+}
+
+// GetLastSignature retrieves the last inserted signature from memory storage.
+func (s *SignatureStorage) GetLastSignature() (string, error) {
+	s.signatureMutex.RLock()
+	defer s.signatureMutex.RUnlock()
+
+	if len(s.signatures) == 0 {
+		return "0", errors.New("no devices found")
+	}
+
+	return s.lastInserted, nil
+}
+
+// InsertSignature creates a signature in memory storage.
+func (s *SignatureStorage) InsertSignature(signature *domain.SignatureResponse) {
+	//FIXME
+	s.signatureMutex.Lock()
+	defer s.signatureMutex.Unlock()
+
+	s.signatures = append(s.signatures, signature)
+	s.lastInserted = signature.Signature
+}
+
 // GetSignatureDevice retrieves a signature device by ID from memory storage.
-func (m *MemoryStorage) GetSignatureDevice(id string) (*domain.InternalSignatureDevice, error) {
+func (m *DeviceStorage) GetSignatureDevice(id string) (*domain.InternalSignatureDevice, error) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
@@ -50,7 +97,7 @@ func (m *MemoryStorage) GetSignatureDevice(id string) (*domain.InternalSignature
 }
 
 // CreateSignatureDevice creates a signature device in memory storage.
-func (m *MemoryStorage) CreateSignatureDevice(device *domain.InternalSignatureDevice) error {
+func (m *DeviceStorage) CreateSignatureDevice(device *domain.InternalSignatureDevice) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -62,7 +109,7 @@ func (m *MemoryStorage) CreateSignatureDevice(device *domain.InternalSignatureDe
 }
 
 // GetAllSignatureDevices retrieves all signature devices from memory storage.
-func (m *MemoryStorage) GetAllSignatureDevices() ([]*domain.InternalSignatureDevice, error) {
+func (m *DeviceStorage) GetAllSignatureDevices() ([]*domain.InternalSignatureDevice, error) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 

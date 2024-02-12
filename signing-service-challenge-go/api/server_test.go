@@ -14,7 +14,7 @@ import (
 
 func TestNewServer(t *testing.T) {
 
-	s := NewServer("http://localhost", ":8080", &persistence.MemoryStorage{})
+	s := NewServer("http://localhost", ":8080", &persistence.DeviceStorage{}, &persistence.SignatureStorage{})
 
 	if s.listenAddress != ":8080" {
 		t.Error("listenAddress should be :8080")
@@ -32,7 +32,7 @@ func TestNewServer(t *testing.T) {
 
 func TestHealthHandlerRR(t *testing.T) {
 
-	s := NewServer("http://localhost", ":8080", &persistence.MemoryStorage{})
+	s := NewServer("http://localhost", ":8080", &persistence.DeviceStorage{}, &persistence.SignatureStorage{})
 
 	req, err := http.NewRequest(http.MethodGet, "/api/v0/health", nil)
 	if err != nil {
@@ -81,7 +81,7 @@ func TestHealthHandlerRR(t *testing.T) {
 }
 
 func TestCreateSignatureDeviceHandler(t *testing.T) {
-	s := NewServer("http://localhost", ":8080", &persistence.MemoryStorage{})
+	s := NewServer("http://localhost", ":8080", &persistence.DeviceStorage{}, &persistence.SignatureStorage{})
 
 	body := []byte(`{
 		"algorithm": "RSA",
@@ -138,7 +138,7 @@ func TestCreateSignatureDeviceHandler(t *testing.T) {
 }
 
 func TestCreateTwoSignatureDeviceHandler(t *testing.T) {
-	s := NewServer("http://localhost", ":8080", &persistence.MemoryStorage{})
+	s := NewServer("http://localhost", ":8080", &persistence.DeviceStorage{}, &persistence.SignatureStorage{})
 
 	body := []byte(`{
 		"algorithm": "RSA",
