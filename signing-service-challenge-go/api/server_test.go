@@ -90,7 +90,7 @@ func TestCreateSignatureDeviceHandler(t *testing.T) {
 
 	req, err := http.NewRequest(http.MethodPost, "/api/v0/signature-device", bytes.NewBuffer(body))
 	rr := httptest.NewRecorder()
-	s.Signature(rr, req)
+	s.CreateSignatureDevice(rr, req)
 
 	if err != nil {
 		t.Error("error on Health POST request")
@@ -147,7 +147,7 @@ func TestCreateTwoSignatureDeviceHandler(t *testing.T) {
 
 	req, err := http.NewRequest(http.MethodPost, "/api/v0/signature-device", bytes.NewBuffer(body))
 	rr := httptest.NewRecorder()
-	s.Signature(rr, req)
+	s.CreateSignatureDevice(rr, req)
 
 	if err != nil {
 		t.Error("error on Health POST request")
@@ -198,7 +198,7 @@ func TestCreateTwoSignatureDeviceHandler(t *testing.T) {
 	}`)
 	req2, err2 := http.NewRequest(http.MethodPost, "/api/v0/signature-device", bytes.NewBuffer(body2))
 	rr = httptest.NewRecorder()
-	s.Signature(rr, req2)
+	s.CreateSignatureDevice(rr, req2)
 
 	if err2 != nil {
 		t.Error("error on Health POST request")

@@ -62,6 +62,11 @@ func GetSignatureService() *SignatureService {
 	return singletonSignatureService
 }
 
+type SignTransactionRequest struct {
+	ID   string `json:"id"`
+	Data string `json:"data"`
+}
+
 type SignatureResponse struct {
 	Signature  string `json:"signature"`
 	SignedData string `json:"signed_data"`
