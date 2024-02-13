@@ -27,8 +27,7 @@ func main() {
 	}(logger)
 	logger.Info("Starting server on " + ListenAddress)
 	storage := persistence.GetSignatureDeviceStorage() // For further implementation change this to DB storage
-	signatureStorage := persistence.GetSignatureStorage()
-	server := api.NewServer(ServerURL, ListenAddress, storage, signatureStorage)
+	server := api.NewServer(ServerURL, ListenAddress, storage)
 	domain.NewSignatureService()
 
 	// Run the server

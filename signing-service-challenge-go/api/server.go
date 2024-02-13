@@ -18,10 +18,9 @@ type ErrorResponse struct {
 
 // Server manages HTTP requests and dispatches them to the appropriate services.
 type Server struct {
-	URL              string
-	listenAddress    string
-	storage          persistence.DevicesStorage
-	signatureStorage persistence.SignaturesStorage
+	URL           string
+	listenAddress string
+	storage       persistence.DevicesStorage
 }
 
 // NewServer is a factory to instantiate a new Server.
@@ -29,14 +28,11 @@ func NewServer(
 	URL string,
 	listenAddress string,
 	storage persistence.DevicesStorage,
-	signaturesStorage persistence.SignaturesStorage,
 ) *Server {
 	return &Server{
-		URL:              URL,
-		listenAddress:    listenAddress,
-		storage:          storage,
-		signatureStorage: signaturesStorage,
-		// TODO: add services / further dependencies here ...
+		URL:           URL,
+		listenAddress: listenAddress,
+		storage:       storage,
 	}
 }
 

@@ -71,7 +71,11 @@ func (s *Server) CreateSignatureDevice(response http.ResponseWriter, request *ht
 	}
 
 	signatureService.Devices[signatureDevice.ID] = signatureDevice
-	signatureResponse := CreateSignatureDeviceResponse(signatureDevice.ID, signatureDevice.Algorithm.GetAlgorithm(), *signatureDevice.Label)
+	signatureResponse := CreateSignatureDeviceResponse(
+		signatureDevice.ID,
+		signatureDevice.Algorithm.GetAlgorithm(),
+		*signatureDevice.Label,
+	)
 	WriteAPIResponse(response, http.StatusCreated, signatureResponse)
 }
 
@@ -113,12 +117,13 @@ func (s *Server) SignTransaction(response http.ResponseWriter, request *http.Req
 	}
 
 	var dataToSign string
-	if device.SignatureCounter == 0 {
+	if s.storage.GetLastSignature() == "0" {
 		dataToSign = "" + data.Data +
 			strconv.Itoa(int(device.SignatureCounter)) +
 			base64.StdEncoding.EncodeToString([]byte(device.ID))
 	} else {
-		lastSignature, err := s.signatureStorage.GetLastSignature()
+		lastSignature := s.storage.GetLastSignature()
+		fmt.Println("last signature:", lastSignature)
 		if err != nil {
 			return
 		}
@@ -158,7 +163,7 @@ func (s *Server) SignTransaction(response http.ResponseWriter, request *http.Req
 	}
 
 	if signatureResponse != nil {
-		s.signatureStorage.InsertSignature(signatureResponse)
+		s.storage.InsertSignature(signatureResponse.Signature)
 		WriteAPIResponse(response, http.StatusCreated, signatureResponse)
 	} else {
 		WriteInternalError(response)
@@ -178,7 +183,6 @@ func (s *Server) GetSignatureDevice(response http.ResponseWriter, request *http.
 
 	queryParams := request.URL.Query()
 
-	// Get the value of a specific query parameter (e.g., "id")
 	id := queryParams.Get("id")
 
 	signatureDevice, err := persistence.GetSignatureDeviceStorage().GetSignatureDevice(id)
@@ -194,7 +198,11 @@ func (s *Server) GetSignatureDevice(response http.ResponseWriter, request *http.
 		return
 	}
 
-	signatureResponse := CreateSignatureDeviceResponse(signatureDevice.ID, signatureDevice.Algorithm.GetAlgorithm(), *signatureDevice.Label)
+	signatureResponse := CreateSignatureDeviceResponse(
+		signatureDevice.ID,
+		signatureDevice.Algorithm.GetAlgorithm(),
+		*signatureDevice.Label,
+	)
 
 	WriteAPIResponse(response, http.StatusFound, signatureResponse)
 }
@@ -225,7 +233,14 @@ func (s *Server) GetAllSignatureDevices(response http.ResponseWriter, request *h
 
 	var signatureResponse []*domain.CreateSignatureDeviceResponse
 	for _, signatureDevice := range signatureDevices {
-		signatureResponse = append(signatureResponse, CreateSignatureDeviceResponse(signatureDevice.ID, signatureDevice.Algorithm.GetAlgorithm(), *signatureDevice.Label))
+		signatureResponse = append(
+			signatureResponse,
+			CreateSignatureDeviceResponse(
+				signatureDevice.ID,
+				signatureDevice.Algorithm.GetAlgorithm(),
+				*signatureDevice.Label,
+			),
+		)
 	}
 
 	WriteAPIResponse(response, http.StatusFound, signatureResponse)
