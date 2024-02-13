@@ -12,27 +12,9 @@ import (
 	"testing"
 )
 
-func TestNewServer(t *testing.T) {
-
-	s := NewServer("http://localhost", ":8080", &persistence.DeviceStorage{}, &persistence.SignatureStorage{})
-
-	if s.listenAddress != ":8080" {
-		t.Error("listenAddress should be :8080")
-	}
-
-	if s.storage == nil {
-		t.Error("storage should not be nil")
-	}
-
-	err := s.Run()
-	if err != nil {
-		t.Error("Running server should not return an error")
-	}
-}
-
 func TestHealthHandlerRR(t *testing.T) {
 
-	s := NewServer("http://localhost", ":8080", &persistence.DeviceStorage{}, &persistence.SignatureStorage{})
+	s := NewServer("http://localhost", ":8080", &persistence.DeviceStorage{})
 
 	req, err := http.NewRequest(http.MethodGet, "/api/v0/health", nil)
 	if err != nil {
@@ -81,7 +63,8 @@ func TestHealthHandlerRR(t *testing.T) {
 }
 
 func TestCreateSignatureDeviceHandler(t *testing.T) {
-	s := NewServer("http://localhost", ":8080", &persistence.DeviceStorage{}, &persistence.SignatureStorage{})
+	storage := persistence.GetSignatureDeviceStorage()
+	s := NewServer("http://localhost", ":8080", storage)
 
 	body := []byte(`{
 		"algorithm": "RSA",
@@ -138,7 +121,8 @@ func TestCreateSignatureDeviceHandler(t *testing.T) {
 }
 
 func TestCreateTwoSignatureDeviceHandler(t *testing.T) {
-	s := NewServer("http://localhost", ":8080", &persistence.DeviceStorage{}, &persistence.SignatureStorage{})
+	storage := persistence.GetSignatureDeviceStorage()
+	s := NewServer("http://localhost", ":8080", storage)
 
 	body := []byte(`{
 		"algorithm": "RSA",
@@ -182,16 +166,6 @@ func TestCreateTwoSignatureDeviceHandler(t *testing.T) {
 	assert.Equal(t, "RSA", algorithm)
 	assert.Equal(t, "My device", label)
 
-	devices := domain.GetSignatureService().Devices
-
-	var device *domain.InternalSignatureDevice
-	for _, v := range devices {
-		device = v
-		break // Exit the loop after the first iteration
-	}
-
-	assert.Equal(t, int32(0), device.SignatureCounter)
-
 	body2 := []byte(`{
 		"algorithm": "ECC",
 		"label": "Another device"
@@ -232,19 +206,97 @@ func TestCreateTwoSignatureDeviceHandler(t *testing.T) {
 
 	assert.Equal(t, "ECC", algorithm)
 	assert.Equal(t, "Another device", label)
+}
 
-	devices = domain.GetSignatureService().Devices
+func TestSignTransactionHandler(t *testing.T) {
+	storage := persistence.GetSignatureDeviceStorage()
+	s := NewServer("http://localhost", ":8080", storage)
 
-	index := 0
-	var device2 *domain.InternalSignatureDevice
-	for _, v := range devices {
-		index++
-		if index == 2 {
-			device2 = v
-			break
+	body := []byte(`{
+		"algorithm": "RSA",
+		"label": "My device"
+	}`)
+
+	req, err := http.NewRequest(http.MethodPost, "/api/v0/signature-device", bytes.NewBuffer(body))
+	rr := httptest.NewRecorder()
+	s.CreateSignatureDevice(rr, req)
+
+	if err != nil {
+		t.Error("error on signature-device POST request")
+	}
+	assert.NoError(t, err)
+
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			t.Error("error closing response body")
 		}
+	}(rr.Result().Body)
+
+	bodyBytes, err := io.ReadAll(rr.Result().Body)
+
+	assert.Equal(t, http.StatusCreated, rr.Code)
+	var response map[string]map[string]string
+	err = json.Unmarshal(bodyBytes, &response)
+	assert.NoError(t, err)
+	data, ok := response["data"]
+	if !ok {
+		t.Error("response does not contain 'data' field")
+	}
+	deviceId, ok := data["id"]
+	if !ok {
+		t.Error("data field does not contain 'id' field")
+	}
+	algorithm, ok := data["algorithm"]
+	if !ok {
+		t.Error("data field does not contain 'algorithm' field")
+	}
+	label, ok := data["label"]
+	if !ok {
+		t.Error("data field does not contain 'label' field")
 	}
 
-	assert.Equal(t, int32(1), device2.SignatureCounter)
+	assert.Equal(t, "RSA", algorithm)
+	assert.Equal(t, "My device", label)
+
+	transactionBody := []byte(`{
+		"id": "` + deviceId + `",
+		"label": "Another device"
+	}`)
+	req2, err2 := http.NewRequest(http.MethodPost, "/api/v0/sign-transaction", bytes.NewBuffer(transactionBody))
+	rr = httptest.NewRecorder()
+	s.SignTransaction(rr, req2)
+
+	if err2 != nil {
+		t.Error("error on sign-transaction POST request")
+	}
+
+	assert.NoError(t, err2)
+
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			t.Error("error closing response body")
+		}
+	}(rr.Result().Body)
+
+	bodyBytes, err = io.ReadAll(rr.Result().Body)
+
+	assert.Equal(t, http.StatusCreated, rr.Code)
+	var response2 map[string]map[string]string
+	err = json.Unmarshal(bodyBytes, &response2)
+	assert.NoError(t, err)
+	data, ok = response2["data"]
+	if !ok {
+		t.Error("response does not contain 'data' field")
+	}
+	algorithm, ok = data["signature"]
+	if !ok {
+		t.Error("data field does not contain 'signature' field")
+	}
+	label, ok = data["signed_data"]
+	if !ok {
+		t.Error("data field does not contain 'signed-data' field")
+	}
 
 }

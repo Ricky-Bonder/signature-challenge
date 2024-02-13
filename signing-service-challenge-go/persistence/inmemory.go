@@ -6,8 +6,8 @@ import (
 	"sync"
 )
 
-// DevicesStorage Implement this interface in any persistence layer, such as a DB
-type DevicesStorage interface {
+// Storage Implement this interface in any persistence layer, such as a DB
+type Storage interface {
 	GetSignatureDevice(id string) (*domain.InternalSignatureDevice, error)
 	CreateSignatureDevice(device *domain.InternalSignatureDevice) error
 	GetAllSignatureDevices() ([]*domain.InternalSignatureDevice, error)

@@ -20,14 +20,14 @@ type ErrorResponse struct {
 type Server struct {
 	URL           string
 	listenAddress string
-	storage       persistence.DevicesStorage
+	storage       persistence.Storage
 }
 
 // NewServer is a factory to instantiate a new Server.
 func NewServer(
 	URL string,
 	listenAddress string,
-	storage persistence.DevicesStorage,
+	storage persistence.Storage,
 ) *Server {
 	return &Server{
 		URL:           URL,
